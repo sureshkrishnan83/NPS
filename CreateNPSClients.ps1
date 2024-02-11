@@ -1,7 +1,32 @@
+<#
+.SYNOPSIS
+    PowerShell script to configure Network Policy Server (NPS) with given clients and IP addresses.
+
+.DESCRIPTION
+    This script automates the configuration of Network Policy Server (NPS) by adding clients, network policies, and connection request policies.
+
+.PARAMETER name
+    Specifies the name of the client.
+
+.PARAMETER ip
+    Specifies the IP address of the client.
+
+.EXAMPLE
+    New-NpsConfiguration -name "Client1" -ip "192.168.1.100"
+    Adds a new NPS configuration for a client named "Client1" with the IP address "192.168.1.100".
+
+.EXAMPLE
+    $clientinfo = Import-Csv C:\temp\nps.csv
+    $clientinfo | ForEach-Object { New-NpsConfiguration -name $_.ClientName -ip $_.IpAddress }
+    Reads client information from a CSV file and configures NPS for each client listed in the file.
+
+.NOTES
+    Author: Suresh Krishnan
+#>
+
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $Global:logFileName = "c:\temp\NPSConfig_$timestamp.log"
-
-
+# Function to log messages to a log file
 function Log-Message {
     param(
         [string]$message,
@@ -17,6 +42,7 @@ function Log-Message {
     Add-Content -Path $logFileName -Value $logEntry
 } 
 
+# Function to add a network policy in NPS
 function Add-NpsNetworkPolicy {
     [CmdletBinding()]
     param(
@@ -62,14 +88,17 @@ function Add-NpsNetworkPolicy {
         $output = Invoke-Expression $command
         if ($output -eq "Ok.") {
             Log-Message -message "Command executed successfully."
-        } else {
+        }
+        else {
             Log-Message -message "Command failed with output: $output" -type "SUCCESS"
         }
-    } catch {
+    }
+    catch {
         Log-Message -message "Failed to execute command: $_" -type "ERROR"
     }
 }
 
+# Function to add a connection request policy in NPS
 function Add-ConnectionRequestPolicy {
     [CmdletBinding()]
     param(
@@ -100,14 +129,17 @@ function Add-ConnectionRequestPolicy {
         $output = Invoke-Expression $command
         if ($output -eq 'Ok.' ) {
             Log-Message -message "Command executed successfully."
-        } else {
+        }
+        else {
             Log-Message -message "Command failed with output: $output" -type "SUCCESS"
         }
-    } catch {
+    }
+    catch {
         Log-Message -message "Failed to execute command: $_" -type "ERROR"
     }
 }
 
+#Function to genrerate random secret Shared passsword for NPS Client 
 function Generate-Password {
     param (
         [Parameter(Mandatory)]
@@ -118,6 +150,7 @@ function Generate-Password {
     return [System.Web.Security.Membership]::GeneratePassword($length, $amountOfNonAlphanumeric)
 }
 
+# Function to add new NPS client 
 function Add-NPSClient {
     [CmdletBinding()]
     param(
@@ -130,18 +163,20 @@ function Add-NPSClient {
         if ($client -ne $null) {
             Write-Host "NPS Client '$name' added successfully witht the $radiusSharedSecret." -ForegroundColor Green
             Log-Message -message "NPS Client '$name' added successfully." -type "SUCCESS"
-        } else {
+        }
+        else {
             throw "An error occurred while adding NPS client '$name'. The client object is null."
             Log-Message -message "An error occurred while adding NPS client $name." -type "ERROR"
         }
-    } catch {
+    }
+    catch {
         Write-Host "An error occurred while adding NPS client '$name': $_.Exception.Message"
         Log-Message -message "An error occurred while adding NPS client '$name': $_.Exception.Message" -type "ERROR"
     }
 }
 
 
-#Main Script Starting
+#Main function to Create  NPS Cleint Creation 
 
 function New-NpsConfiguration {
 
@@ -170,7 +205,8 @@ function New-NpsConfiguration {
     try {
         Copy-Item $IASConfigFile $backupFileName -Force
         Log-Message -message "Backupfile of NPS configuration file succcessfully created under $backupFileName" -type "SUCCESS"
-    } catch {
+    }
+    catch {
         Log-Message -message "Failed to create backup: $_" -type "ERROR"
         exit 1
     }
@@ -182,7 +218,8 @@ function New-NpsConfiguration {
     try {
         $IASConfig = [XML](Get-Content -Path $IASConfigFile)
         Log-Message -message "NPS Config file $IASConfigFile loaded in memory successfully " -type "SUCCESS"
-    } catch {
+    }
+    catch {
         Log-Message -message "Failed to load XML: $_" -type "ERROR"
         exit 1
     }
@@ -199,13 +236,11 @@ function New-NpsConfiguration {
 
 
 
-
-
 # Call the function
 # Sample usage: "name" and "ip" can be piped into the function or passed directly
 # Example: "name" | New-NpsConfiguration
 $radiusSharedSecret = Generate-Password -length 12
 $clientinfo = Import-Csv C:\temp\nps.csv
 
-$clientinfo | ForEach-Object { New-NpsConfiguration -name $_.CleintName -ip $_.IpAddress}
+$clientinfo | ForEach-Object { New-NpsConfiguration -name $_.CleintName -ip $_.IpAddress }
 
