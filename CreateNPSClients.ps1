@@ -26,6 +26,7 @@
 
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $Global:logFileName = "c:\temp\NPSConfig_$timestamp.log"
+
 # Function to log messages to a log file
 function Log-Message {
     param(
@@ -42,6 +43,25 @@ function Log-Message {
     Add-Content -Path $logFileName -Value $logEntry
 } 
 
+# Default Location for NPS (IAS) Config File
+# Create a backup
+$IASConfigFile = "C:\windows\system32\ias\ias.xml"
+$backupFileName = "$(($IASConfigFile).TrimEnd(".xml"))_BACKUP_$(Get-Date -Format MMddyy_HHmm).xml" 
+$logMessage = "Creating backup of NPS configuration file to: $backupFileName"
+Log-Message -message $logMessage -type "INFO"
+# Default Location for NPS (IAS) Config File
+
+try {
+    Copy-Item $IASConfigFile $backupFileName -Force
+    Log-Message -message "Backupfile of NPS configuration file succcessfully created under $backupFileName" -type "SUCCESS"
+}
+catch {
+    Log-Message -message "Failed to create backup: $_" -type "ERROR"
+    exit 1
+}
+
+
+
 # Function to add a network policy in NPS
 function Add-NpsNetworkPolicy {
     [CmdletBinding()]
@@ -51,6 +71,7 @@ function Add-NpsNetworkPolicy {
     )
 
     # Get the current Policy Number
+    $IASConfig = [XML](Get-Content -Path C:\Windows\System32\ias\ias.xml)
     [int]$CurrentProcessingOrder = $IASConfig.root.children.Microsoft_Internet_Authentication_Service.children.NetworkPolicy.children.LastChild.Properties.msNPSequence.'#text'
     $NextProcessOrder = $CurrentProcessingOrder + 1
 
@@ -107,7 +128,7 @@ function Add-ConnectionRequestPolicy {
     )
 
     # Get the current Policy Number
-    $IASConfig = [XML](Get-Content -Path $IASConfigFile)
+    $IASConfig = [XML](Get-Content -Path C:\Windows\System32\ias\ias.xml)
     [int]$CurrentProcessingOrder = $IASConfig.root.children.Microsoft_Internet_Authentication_Service.children.Proxy_Policies.Children.LastChild.Properties.msNPSequence.'#text'
     $NextProcessOrder = $CurrentProcessingOrder + 1
 
@@ -150,6 +171,9 @@ function Generate-Password {
     return [System.Web.Security.Membership]::GeneratePassword($length, $amountOfNonAlphanumeric)
 }
 
+# Generate a random secret that will be used for nps client creation . 
+$radiusSharedSecret = Generate-Password -length 12
+
 # Function to add new NPS client 
 function Add-NPSClient {
     [CmdletBinding()]
@@ -160,7 +184,7 @@ function Add-NPSClient {
 
     try {
         $client = New-NpsRadiusClient -Name $name -Address "$ip" -SharedSecret $radiusSharedSecret
-        if ($client -ne $null) {
+        if ($null -ne $client) {
             Write-Host "NPS Client '$name' added successfully witht the $radiusSharedSecret." -ForegroundColor Green
             Log-Message -message "NPS Client '$name' added successfully." -type "SUCCESS"
         }
@@ -193,37 +217,7 @@ function New-NpsConfiguration {
     Start-Transcript -Path $transcriptPath -Append
 
     #SharedSecret 
-       
-    # Default Location for NPS (IAS) Config File
-    $IASConfigFile = "C:\windows\system32\ias\ias.xml"
-
-    # Create a backup
-    $backupFileName = "$(($IASConfigFile).TrimEnd(".xml"))_BACKUP_$(Get-Date -Format MMddyy_HHmm).xml" 
-    $logMessage = "Creating backup of NPS configuration file to: $backupFileName"
-    Log-Message -message $logMessage -type "INFO"
-
-    try {
-        Copy-Item $IASConfigFile $backupFileName -Force
-        Log-Message -message "Backupfile of NPS configuration file succcessfully created under $backupFileName" -type "SUCCESS"
-    }
-    catch {
-        Log-Message -message "Failed to create backup: $_" -type "ERROR"
-        exit 1
-    }
-
-    # Load the XML
-    $logMessage = "Loading NPS configuration file: $IASConfigFile"
-    Log-Message -message $logMessage
-
-    try {
-        $IASConfig = [XML](Get-Content -Path $IASConfigFile)
-        Log-Message -message "NPS Config file $IASConfigFile loaded in memory successfully " -type "SUCCESS"
-    }
-    catch {
-        Log-Message -message "Failed to load XML: $_" -type "ERROR"
-        exit 1
-    }
-
+      
     Add-NPSClient -name $name -ip $ip
     Add-NpsNetworkPolicy -name $name -ip $ip
     Add-ConnectionRequestPolicy -name $name -ip $ip
@@ -239,7 +233,7 @@ function New-NpsConfiguration {
 # Call the function
 # Sample usage: "name" and "ip" can be piped into the function or passed directly
 # Example: "name" | New-NpsConfiguration
-$radiusSharedSecret = Generate-Password -length 12
+
 $clientinfo = Import-Csv C:\temp\nps.csv
 
 $clientinfo | ForEach-Object { New-NpsConfiguration -name $_.CleintName -ip $_.IpAddress }
