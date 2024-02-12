@@ -13,10 +13,10 @@ Adding a Single Client
 To add a single client, use the following command:
 
 ## Example 
-`
+```
 New-NpsConfiguration -name "Client1" -ip "192.168.1.100"
 
-`
+````
 Replace "Client1" with the desired client name and "192.168.1.100" with the client's IP address.
 
 ## Adding Clients from CSV
