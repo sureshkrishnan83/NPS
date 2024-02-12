@@ -3,11 +3,12 @@
 This PowerShell script automates the configuration of Network Policy Server (NPS) by adding clients, network policies, and connection request policies. It is designed to streamline the setup process for NPS by allowing administrators to specify client information via command-line parameters or by importing data from a CSV file.
 
 ## Features
-### 1. Add NPS Clients: Add new NPS clients with specified names and IP addresses.
-### 2. Add Network Policies: Configure network policies in NPS based on client information.
-### 3. Add Connection Request Policies: Set up connection request policies in NPS to manage incoming connection requests.
-### 4. Backup Configuration: Automatically creates a backup of the NPS configuration file before making changes.
-Usage
+1. Add NPS Clients: Add new NPS clients with specified names and IP addresses.
+2. Add Network Policies: Configure network policies in NPS based on client information.
+3. Add Connection Request Policies: Set up connection request policies in NPS to manage incoming connection requests.
+4. Backup Configuration: Automatically creates a backup of the NPS configuration file before making changes.
+
+## Usage
 Adding a Single Client
 To add a single client, use the following command:
 
