@@ -12,7 +12,6 @@ Adding a Single Client
 To add a single client, use the following command:
 
 ## powershell
-Copy code
 `New-NpsConfiguration -name "Client1" -ip "192.168.1.100"`
 Replace "Client1" with the desired client name and "192.168.1.100" with the client's IP address.
 
@@ -20,9 +19,11 @@ Replace "Client1" with the desired client name and "192.168.1.100" with the clie
 To add clients from a CSV file, use the following command:
 
 ## powershell
-Copy code
-```$clientinfo = Import-Csv C:\temp\nps.csv
-$clientinfo | ForEach-Object { New-NpsConfiguration -name $_.ClientName -ip $_.IpAddress }```
+```
+$clientinfo = Import-Csv C:\temp\nps.csv
+$clientinfo | ForEach-Object { New-NpsConfiguration -name $_.ClientName -ip $_.IpAddress }
+
+```
 Ensure that the CSV file contains columns named ClientName and IpAddress with the corresponding client information.
 
 ## Requirements
