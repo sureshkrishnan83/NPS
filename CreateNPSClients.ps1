@@ -243,4 +243,3 @@ $radiusSharedSecret = Generate-Password -length 12
 $clientinfo = Import-Csv C:\temp\nps.csv
 
 $clientinfo | ForEach-Object { New-NpsConfiguration -name $_.CleintName -ip $_.IpAddress }
-
