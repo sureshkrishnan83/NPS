@@ -226,9 +226,9 @@ else {
     Write-Host "NPS Client creation failed. Skipping Network Policy and Connection Request Policy addition." -ForegroundColor Red
 }
 
-Get-NpsRadiusClient  | Where-Object {$_.name -eq "$name"}
-& netsh nps show cp | select-string "$name" -Context 2,13 | Out-Host
-& netsh nps show np | select-string "$name" -Context 2,22 | Out-Host
+Get-NpsRadiusClient  | Where-Object { $_.name -eq "$name" }
+& netsh nps show cp | select-string "$name" -Context 2, 13 | Out-Host
+& netsh nps show np | select-string "$name" -Context 2, 22 | Out-Host
 
 
 
