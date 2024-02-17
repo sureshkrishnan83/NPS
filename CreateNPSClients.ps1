@@ -1,239 +1,209 @@
-<#
-.SYNOPSIS
-    PowerShell script to configure Network Policy Server (NPS) with given clients and IP addresses.
+ 
+Param ([string]$name,[string]$ip)
+       
+# Start Transcript 
 
-.DESCRIPTION
-    This script automates the configuration of Network Policy Server (NPS) by adding clients, network policies, and connection request policies.
+$transcriptPath = "C:\TranscriptLogs\NPS_Configuration_Log_$(Get-Date -Format 'yyyyMMdd_HHmmss').txt"
+Start-Transcript -Path $transcriptPath -Append
 
-.PARAMETER name
-    Specifies the name of the client.
 
-.PARAMETER ip
-    Specifies the IP address of the client.
+# Get the script file name without extension
+$scriptName = [System.IO.Path]::GetFileNameWithoutExtension($MyInvocation.MyCommand.Path)
 
-.EXAMPLE
-    New-NpsConfiguration -name "Client1" -ip "192.168.1.100"
-    Adds a new NPS configuration for a client named "Client1" with the IP address "192.168.1.100".
-
-.EXAMPLE
-    $clientinfo = Import-Csv C:\temp\nps.csv
-    $clientinfo | ForEach-Object { New-NpsConfiguration -name $_.ClientName -ip $_.IpAddress }
-    Reads client information from a CSV file and configures NPS for each client listed in the file.
-
-.NOTES
-    Author: Suresh Krishnan
-#>
-
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$Global:logFileName = "c:\temp\NPSConfig_$timestamp.log"
-
-# Function to log messages to a log file
-function Log-Message {
-    param(
-        [string]$message,
-        [string]$type = "INFO"
-    )
+# Define the log file path using the script file name and current date/time
+$logFilePath = "C:\temp\$scriptName.txt"
 
 
 
-    $logEntry = "[$timestamp] [$type] $message"
-    Write-Output $logEntry
-    
-    # Append log entry to the logfile
-    Add-Content -Path $logFileName -Value $logEntry
-} 
-
-# Default Location for NPS (IAS) Config File
-# Create a backup
-$IASConfigFile = "C:\windows\system32\ias\ias.xml"
-$backupFileName = "$(($IASConfigFile).TrimEnd(".xml"))_BACKUP_$(Get-Date -Format MMddyy_HHmm).xml" 
-$logMessage = "Creating backup of NPS configuration file to: $backupFileName"
-Log-Message -message $logMessage -type "INFO"
-# Default Location for NPS (IAS) Config File
-
-try {
-    Copy-Item $IASConfigFile $backupFileName -Force
-    Log-Message -message "Backupfile of NPS configuration file succcessfully created under $backupFileName" -type "SUCCESS"
-}
-catch {
-    Log-Message -message "Failed to create backup: $_" -type "ERROR"
-    exit 1
+# Function to write log messages
+function Write-Log {
+   param(
+       [string]$Message,
+       [string]$Level = ""
+   )
+   
+   $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+   $logMessage = "$timestamp - [$Level] $Message"
+   if (-not (Test-Path $logFilePath)) {
+       New-Item -ItemType File -Path $logFilePath -Force | Out-Null
+   }
+   $logMessage | Out-File -FilePath $logFilePath -Append
 }
 
+$StartTime =   (Get-Date)
+Write-Log "Script Started at: $(Get-date -format 'dd/MM/yyy hh:mm:ss tt')" -Level "INFO"
 
 
-# Function to add a network policy in NPS
-function Add-NpsNetworkPolicy {
-    [CmdletBinding()]
-    param(
-        [string]$name,
-        [string]$ip
-    )
 
-    # Get the current Policy Number
-    $IASConfig = [XML](Get-Content -Path C:\Windows\System32\ias\ias.xml)
-    [int]$CurrentProcessingOrder = $IASConfig.root.children.Microsoft_Internet_Authentication_Service.children.NetworkPolicy.children.LastChild.Properties.msNPSequence.'#text'
-    $NextProcessOrder = $CurrentProcessingOrder + 1
-
-    $logMessage = "Adding Network Policy with name: AZURE_MFA_$name and IP: $ip"
-    Log-Message -message $logMessage -type "SUCCESS"
-
-    $arguments = @(
-        "name = `"AZURE_MFA_$name`"",
-        "conditionid = '0x100c'",
-        "conditiondata = `"$ip`"",
-        "policysource = '0'",
-        "processingorder = `"$NextProcessOrder`"",
-        "profileid = '0x1009'",
-        "profiledata = '0x1'",
-        "profiledata = '0x2'",
-        "profiledata = '0x3'",
-        "profiledata = '0x9'",
-        "profiledata = '0x4'",
-        "profiledata = '0xa'",
-        "profiledata = '0x7'",
-        "profileid = '0x1005'",
-        "profiledata = 'TRUE'",
-        "profileid = '0x100f'",
-        "profiledata = 'TRUE'",
-        "profileid = '0x7'",
-        "profiledata = '0x1'",
-        "profileid = '0x6'",
-        "profiledata = '0x2'",
-        "profileid = '0x1b'",
-        "profiledata = '0x1a4'"
-    )
-
-    try {
-        $command = "netsh nps add np " + ($arguments -join ' ')
-        $output = Invoke-Expression $command
-        if ($output -eq "Ok.") {
-            Log-Message -message "Command executed successfully."
-        }
-        else {
-            Log-Message -message "Command failed with output: $output" -type "SUCCESS"
-        }
-    }
-    catch {
-        Log-Message -message "Failed to execute command: $_" -type "ERROR"
-    }
-}
-
-# Function to add a connection request policy in NPS
 function Add-ConnectionRequestPolicy {
-    [CmdletBinding()]
-    param(
-        [string]$name,
-        [string]$ip
-    )
+   [CmdletBinding()]
+   param(
+       [string]$name,
+       [string]$ip
+   )
 
-    # Get the current Policy Number
-    $IASConfig = [XML](Get-Content -Path C:\Windows\System32\ias\ias.xml)
-    [int]$CurrentProcessingOrder = $IASConfig.root.children.Microsoft_Internet_Authentication_Service.children.Proxy_Policies.Children.LastChild.Properties.msNPSequence.'#text'
-    $NextProcessOrder = $CurrentProcessingOrder + 1
+   # Get the current Policy Number
+   $IASConfig = [XML](Get-Content -Path C:\Windows\System32\ias\ias.xml)
+   [int]$CurrentProcessingOrder = $IASConfig.root.children.Microsoft_Internet_Authentication_Service.children.Proxy_Policies.Children.LastChild.Properties.msNPSequence.'#text'
+   $NextProcessOrder = $CurrentProcessingOrder + 1
 
-    $logMessage = "Adding Connection Request Policy with name: AZURE_MFA_$name and IP: $ip"
-    Log-Message -message $logMessage 
+   $logMessage = "Adding Connection Request Policy with name: AZURE_MFA_$name and IP: $ip"
+   write-Log -message $logMessage -Level "INFO"
 
-    $arguments = @(
-        "name = `"AZURE_MFA_$name`"",
-        "conditionid = `"0x100c`"",
-        "conditiondata = `"$ip`"",
-        "processingorder = $NextProcessOrder",
-        "policysource = '0'",
-        "profileid = '0x1025'",
-        "profiledata = '0x1'"
-    )
+   $arguments = @(
+       "name = `"AZURE_MFA_$name`"",
+       "conditionid = `"0x100c`"",
+       "conditiondata = `"$ip`"",
+       "processingorder = $NextProcessOrder",
+       "policysource = '0'",
+       "profileid = '0x1025'",
+       "profiledata = '0x1'"
+   )
 
-    try {
-        $command = "netsh nps add crp " + ($arguments -join ' ')
-        $output = Invoke-Expression $command
-        if ($output -eq 'Ok.' ) {
-            Log-Message -message "Command executed successfully."
-        }
-        else {
-            Log-Message -message "Command failed with output: $output" -type "SUCCESS"
-        }
-    }
-    catch {
-        Log-Message -message "Failed to execute command: $_" -type "ERROR"
-    }
+   try {
+       $command = "netsh nps add crp " + ($arguments -join ' ')
+       $output = Invoke-Expression $command
+       if ($output -eq 'Ok.' ) {
+           Write-Log -message "Command executed successfully." -Level "SUCESS"
+       }
+       else {
+           Write-Log -message "Command failed with output: $output" -level "WARNING"
+       }
+   }
+   catch {
+       write-log -message "Failed to execute command: $_" -level "ERROR"
+   }
 }
 
-#Function to genrerate random secret Shared passsword for NPS Client 
+function Add-NpsNetworkPolicy {
+   [CmdletBinding()]
+   param(
+       [string]$name,
+       [string]$ip
+   )
+
+   # Get the current Policy Number
+   $IASConfig = [XML](Get-Content -Path C:\Windows\System32\ias\ias.xml)
+   [int]$CurrentProcessingOrder = $IASConfig.root.children.Microsoft_Internet_Authentication_Service.children.NetworkPolicy.children.LastChild.Properties.msNPSequence.'#text'
+   $NextProcessOrder = $CurrentProcessingOrder + 1
+
+   $logMessage = "Adding Network Policy with name: AZURE_MFA_$name and IP: $ip"
+   Write-Log -message $logMessage -level "SUCCESS"
+
+   $arguments = @(
+       "name = `"AZURE_MFA_$name`"",
+       "conditionid = '0x100c'",
+       "conditiondata = `"$ip`"",
+       "policysource = '0'",
+       "processingorder = `"$NextProcessOrder`"",
+       "profileid = '0x1009'",
+       "profiledata = '0x1'",
+       "profiledata = '0x2'",
+       "profiledata = '0x3'",
+       "profiledata = '0x9'",
+       "profiledata = '0x4'",
+       "profiledata = '0xa'",
+       "profiledata = '0x7'",
+       "profileid = '0x1005'",
+       "profiledata = 'TRUE'",
+       "profileid = '0x100f'",
+       "profiledata = 'TRUE'",
+       "profileid = '0x7'",
+       "profiledata = '0x1'",
+       "profileid = '0x6'",
+       "profiledata = '0x2'",
+       "profileid = '0x1b'",
+       "profiledata = '0x1a4'"
+   )
+
+   try {
+       $command = "netsh nps add np " + ($arguments -join ' ')
+       $output = Invoke-Expression $command
+       if ($output -eq "Ok.") {
+           Write-Log -message "$command Command executed successfully." -Level "INFO"
+       }
+       else {
+           Write-Log -message "Command failed with output: $output" -level "SUCCESS"
+       }
+   }
+   catch {
+       Write-Log -message "Failed to execute command: $_" -level "ERROR"
+   }
+}
+
 function Generate-Password {
-    param (
-        [Parameter(Mandatory)]
-        [int] $length,
-        [int] $amountOfNonAlphanumeric = 4
-    )
-    Add-Type -AssemblyName 'System.Web'
-    return [System.Web.Security.Membership]::GeneratePassword($length, $amountOfNonAlphanumeric)
+   param (
+       [Parameter(Mandatory)]
+       [int] $length,
+       [int] $amountOfNonAlphanumeric = 4
+   )
+   Add-level -AssemblyName 'System.Web'
+   return [System.Web.Security.Membership]::GeneratePassword($length, $amountOfNonAlphanumeric)
 }
 
-# Generate a random secret that will be used for nps client creation . 
-$radiusSharedSecret = Generate-Password -length 12
+function Generate-Password {
+   param (
+       [Parameter(Mandatory)]
+       [int] $length,
+       [int] $amountOfNonAlphanumeric = 4
+   )
+   Add-Type -AssemblyName 'System.Web'
+   return [System.Web.Security.Membership]::GeneratePassword($length, $amountOfNonAlphanumeric)
+}
 
-# Function to add new NPS client 
 function Add-NPSClient {
-    [CmdletBinding()]
-    param(
-        [string]$name,
-        [string]$ip
-    )
+   [CmdletBinding()]
+   param(
+       [string]$name,
+       [string]$ip,
+       [string]$sharedsecret
+   )
 
-    try {
-        $client = New-NpsRadiusClient -Name $name -Address "$ip" -SharedSecret $radiusSharedSecret
-        if ($null -ne $client) {
-            Write-Host "NPS Client '$name' added successfully witht the $radiusSharedSecret." -ForegroundColor Green
-            Log-Message -message "NPS Client '$name' added successfully." -type "SUCCESS"
-        }
-        else {
-            throw "An error occurred while adding NPS client '$name'. The client object is null."
-            Log-Message -message "An error occurred while adding NPS client $name." -type "ERROR"
-        }
-    }
-    catch {
-        Write-Host "An error occurred while adding NPS client '$name': $_.Exception.Message"
-        Log-Message -message "An error occurred while adding NPS client '$name': $_.Exception.Message" -type "ERROR"
-    }
+   try {
+       $client = New-NpsRadiusClient -Name $name -Address "$ip" -SharedSecret $radiusSharedSecret
+       if ($null -ne $client) {
+           Write-Host "NPS Client '$name' added successfully witht the $radiusSharedSecret." -ForegroundColor Green
+           Write-Log -message "NPS Client '$name' added successfully." -level "SUCCESS"
+       }
+       else {
+           throw "An error occurred while adding NPS client '$name'. The client object is null."
+           Write-Log -message "An error occurred while adding NPS client $name." -level "ERROR"
+       }
+   }
+   catch {
+       Write-Host "An error occurred while adding NPS client '$name': $_.Exception.Message"
+       Write-Log -message "An error occurred while adding NPS client '$name': $_.Exception.Message" -level "ERROR"
+   }
 }
 
 
-#Main function to Create  NPS Cleint Creation 
+#Main Script 
+  
+$radiusSharedSecret = Generate-Password -length 12 
 
-function New-NpsConfiguration {
+ 
+   Add-NPSClient -name $name -ip $ip -sharedsecret $radiusSharedSecret
+   Add-NpsNetworkPolicy -name $name -ip $ip
+   Add-ConnectionRequestPolicy -name $name -ip $ip
+ 
+   
+   
+   
+   $EndTime =   (Get-Date)
+Write-Log "Script Ended at: $(Get-date -format 'dd/MM/yyy hh:mm:ss tt')" -Level "INFO"
 
-    [CmdletBinding()]
-    param (
-        [Parameter(ValueFromPipeline = $true, Position = 0)]
-        [string]$name,
-        
-        [Parameter(ValueFromPipeline = $true, Position = 1)]
-        [string]$ip
+#Get Elapsed Time
+$ElapsedTime = ($EndTime - $StartTime).Seconds
+Write-Log "Script Execution Time: $ElapsedTime Seconds" -Level "INFO"
 
-    )
-    $transcriptPath = "C:\TranscriptLogs\NPS_Configuration_Log_$(Get-Date -Format 'yyyyMMdd_HHmmss').txt"
-    Start-Transcript -Path $transcriptPath -Append
-
-    #SharedSecret 
-      
-    Add-NPSClient -name $name -ip $ip
-    Add-NpsNetworkPolicy -name $name -ip $ip
-    Add-ConnectionRequestPolicy -name $name -ip $ip
-    
-    
-
-    # Stop transcript logging
-    Stop-Transcript
-}
+#Invoke-Item $logFilePath
 
 
+   # Stop transcript logging
+  
 
-# Call the function
-# Sample usage: "name" and "ip" can be piped into the function or passed directly
-# Example: "name" | New-NpsConfiguration
+  
 
-$clientinfo = Import-Csv C:\temp\nps.csv
+Stop-Transcript
 
-$clientinfo | ForEach-Object { New-NpsConfiguration -name $_.CleintName -ip $_.IpAddress }
+
