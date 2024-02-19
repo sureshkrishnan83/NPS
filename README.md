@@ -1,40 +1,24 @@
-# NPS Configuration PowerShell Script
-### Overview
-This PowerShell script automates the configuration of Network Policy Server (NPS) by adding clients, network policies, and connection request policies. It is designed to streamline the setup process for NPS by allowing administrators to specify client information via command-line parameters or by importing data from a CSV file.
+# NPS Configuration Script
 
-## Features
-- Add NPS Clients: Add new NPS clients with specified names and IP addresses.
-- Add Network Policies: Configure network policies in NPS based on client information.
-- Add Connection Request Policies: Set up connection request policies in NPS to manage incoming connection requests.
-- Backup Configuration: Automatically creates a backup of the NPS configuration file before making changes.
+This PowerShell script automates the configuration of Network Policy Server (NPS) with Azure Multi-Factor Authentication (MFA). It performs the following tasks:
+
+- Backs up the NPS configuration file
+- Generates a new password for the RADIUS shared secret
+- Adds an NPS client
+- Creates a network policy
+- Adds a connection request policy
+
+## Prerequisites
+
+- PowerShell
+- Administrator privileges
 
 ## Usage
-To add a single client, use the following command:
 
-## Example 
-```
-New-NpsConfiguration -name "Client1" -ip "192.168.1.100"
+1. Download or clone the script to your local machine.
+2. Open PowerShell with administrator privileges.
+3. Navigate to the directory where the script is located.
+4. Execute the script with the required parameters:
 
-````
-Replace "Client1" with the desired client name and "192.168.1.100" with the client's IP address.
-
-## Adding Clients from CSV
-To add clients from a CSV file, use the following command:
-
-## Example 
-```
-$clientinfo = Import-Csv C:\temp\nps.csv
-$clientinfo | ForEach-Object { New-NpsConfiguration -name $_.ClientName -ip $_.IpAddress }
-
-```
-Ensure that the CSV file contains columns named ClientName and IpAddress with the corresponding client information.
-
-## Requirements
-PowerShell 3.0 or higher
-Administrator privileges to execute the script
-Network Policy Server (NPS) installed and configured
-
-### Notes
-- Author: Suresh Krishnan
-- Date: 12-Feb-2024 
-
+```powershell
+.\Configure-NPS.ps1 -name "ExampleClient" -ip "192.168.1.100"
