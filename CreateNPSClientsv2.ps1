@@ -1,5 +1,29 @@
 #Add command based help for the script
 
+<#
+.SYNOPSIS
+    This script configures NPS (Network Policy Server) with Azure MFA (Multi-Factor Authentication).
+.DESCRIPTION
+    This script backs up the NPS configuration file, generates a new password for the RADIUS shared secret,
+    adds an NPS client, creates a network policy, and adds a connection request policy.
+    It also displays information about the added NPS client, connection request policy, and network policy.
+.PARAMETER name
+    The name of the NPS client, connection request policy, and network policy to be created.
+.PARAMETER ip
+    The IP address associated with the NPS client, connection request policy, and network policy.
+.EXAMPLE
+    .\CreateNPSClients.ps1 -name "ExampleClient" -ip "192.168.1.100"
+    Configures NPS with the specified name and IP address.
+.NOTES
+    File Name: Configure-NPS.ps1
+    Author: Suresh Krishnan 
+    Version: 1.0
+    Date: [Date]
+    Change Log:
+        - Version 1.0: Initial script
+#>
+
+
 Param (
     [string]$name,
     [string]$ip
