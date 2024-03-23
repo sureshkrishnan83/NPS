@@ -21,4 +21,4 @@ This PowerShell script automates the configuration of Network Policy Server (NPS
 4. Execute the script with the required parameters:
 
 ```powershell
-.\Configure-NPS.ps1 -name "ExampleClient" -ip "192.168.1.100"
+.\createNPSClientV3.ps1 -IPAddress 10.0.0.1 -ClientName Server01 -SharedSecret Password1245$ -Projectname Projectname
