@@ -17,14 +17,14 @@ param(
 
 
 # Start Transcript 
-$transcriptPath = "C:\TranscriptLogs\NPS_Configuration_Log_$(Get-Date -Format 'yyyyMMdd_HHmmss').txt"
+$transcriptPath = "C:\buildLog\NPS_Configuration_Log_$(Get-Date -Format 'yyyyMMdd_HHmmss').txt"
 Start-Transcript -Path $transcriptPath -Append
 
 # Get the script file name without extension
 $scriptName = [System.IO.Path]::GetFileNameWithoutExtension($MyInvocation.MyCommand.Path)
 
 # Define the log file path using the script file name and current date/time
-$logFilePath = "C:\temp\$scriptName.txt"
+$logFilePath = "C:\buildLog\$scriptName.txt"
 
 
 function Write-Log {
