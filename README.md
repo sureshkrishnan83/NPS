@@ -13,6 +13,10 @@ This PowerShell script automates the configuration of Network Policy Server (NPS
 - PowerShell
 - Administrator privileges
 
+## Demo
+[![Video](https://img.youtube.com/vi/8P5AZfCMPlc/maxresdefault.jpg)](https://www.youtube.com/watch?v=8P5AZfCMPlc)
+
+
 ## Usage
 
 1. Download or clone the script to your local machine.
@@ -23,5 +27,4 @@ This PowerShell script automates the configuration of Network Policy Server (NPS
 ```powershell
 .\createNPSClientV3.ps1 -IPAddress 10.0.0.1 -ClientName Server01 -SharedSecret Password1245$ -Projectname Projectname
 
-## Demo
-[![Video](https://img.youtube.com/vi/8P5AZfCMPlc/maxresdefault.jpg)](https://www.youtube.com/watch?v=8P5AZfCMPlc)
+
