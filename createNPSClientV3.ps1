@@ -17,14 +17,14 @@ param(
 
 
 # Start Transcript 
-$transcriptPath = "C:\buildLog\NPS_Configuration_Log_$(Get-Date -Format 'yyyyMMdd_HHmmss').txt"
+$transcriptPath = "C:\buildLog\createnpsclient_Transcript_Log_$(Get-Date -Format 'yyyyMMdd_HHmmss').txt"
 Start-Transcript -Path $transcriptPath -Append
 
 # Get the script file name without extension
 $scriptName = [System.IO.Path]::GetFileNameWithoutExtension($MyInvocation.MyCommand.Path)
 
 # Define the log file path using the script file name and current date/time
-$logFilePath = "C:\buildLog\$scriptName.txt"
+$logFilePath = "C:\buildLog\$scriptName.log"
 
 
 function Write-Log {
@@ -92,7 +92,7 @@ function Add-ConnectionRequestPolicy {
     [int]$CurrentProcessingOrder = $IASConfig.root.children.Microsoft_Internet_Authentication_Service.children.Proxy_Policies.Children.LastChild.Properties.msNPSequence.'#text'
     $NextProcessOrder = $CurrentProcessingOrder + 1
 
-    $logMessage = "Adding Connection Request Policy with name: $Projectname_$ClientName with IP: $IPAddress `n"
+    $logMessage = "Adding Connection Request Policy with name: $Projectname_$ClientName with IP: $IPAddress"
     Write-Host $logMessage -ForegroundColor Green 
     write-Log -message $logMessage -Level "INFO"
 
@@ -144,7 +144,7 @@ function Add-NpsNetworkPolicy {
     [int]$CurrentProcessingOrder = $IASConfig.root.children.Microsoft_Internet_Authentication_Service.children.NetworkPolicy.children.LastChild.Properties.msNPSequence.'#text'
     $NextProcessOrder = $CurrentProcessingOrder + 1
 
-    $logMessage = "Adding Network Policy with name: $ProjectName_$ClientName and IP: $ip `n"
+    $logMessage = "Adding Network Policy with name: $ProjectName_$ClientName and IPAddress: $ip"
     Write-Log -message $logMessage -level "INFO"
     Write-Host $logMessage -ForegroundColor Green
 
@@ -178,7 +178,7 @@ function Add-NpsNetworkPolicy {
         $command = "netsh nps add np " + ($arguments -join ' ')
         $output = Invoke-Expression $command
         if ($output -eq "Ok.") {
-            Write-Log -message "$command Command executed successfully." -Level "INFO"
+            Write-Log -message "Command executed successfully." -Level "INFO"
             Write-Host "Network policy With Name $Projectname`_$ClientName with $IPAddress has been created successfully `n" -ForegroundColor Green
             Write-Log -Message "Network policy With Name $Projectname`_$ClientName with $IPAddress has been created successfully" -Level "SUCCESS"
         }
