@@ -13,8 +13,6 @@ This PowerShell script automates the configuration of Network Policy Server (NPS
 - PowerShell
 - Administrator privileges
 
-## Demo
-[![Video](https://img.youtube.com/vi/8P5AZfCMPlc/maxresdefault.jpg)](https://www.youtube.com/watch?v=8P5AZfCMPlc)
 
 
 ## Usage
