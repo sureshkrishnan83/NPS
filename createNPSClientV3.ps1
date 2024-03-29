@@ -325,3 +325,4 @@ Write-Host " Script Execution Time: $ElapsedTime Seconds `n" -ForegroundColor Gr
 Write-Host "You can check the script logs at $logFilePath "
 # Stop transcript logging
 Stop-Transcript
+##End of script. 
