@@ -11,7 +11,10 @@ param(
     [string]$SharedSecret,
 
     [Parameter(Mandatory = $false)]
-    [string]$Projectname
+    [string]$Projectname,
+
+    [Parameter(Mandatory = $false)]
+    [string]$Regex
 
 )
 
@@ -83,9 +86,16 @@ function Add-ConnectionRequestPolicy {
         [string]$ClientName,
 
         [Parameter(Mandatory = $false)]
-        [string]$Projectname
+        [string]$Projectname,
+        [Parameter(Mandatory = $false)]
+        [string]$Regex
     
-    )
+    )    
+    # Determine the value for conditiondata based on the regex parameter
+    $conditiondata = if ($Regex) { $Regex } else { $IPAddress }
+        
+    
+    
 
     # Get the current Policy Number
     $IASConfig = [XML](Get-Content -Path C:\Windows\System32\ias\ias.xml)
@@ -99,7 +109,7 @@ function Add-ConnectionRequestPolicy {
     $arguments = @(
         "name = `"$Projectname`_$ClientName`"",
         "conditionid = `"0x100c`"",
-        "conditiondata = `"$IPAddress`"",
+        "conditiondata = `"$conditiondata`"",
         "processingorder = $NextProcessOrder",
         "policysource = '0'",
         "profileid = '0x1025'",
@@ -135,9 +145,15 @@ function Add-NpsNetworkPolicy {
         [string]$ClientName,
     
         [Parameter(Mandatory = $false)]
-        [string]$Projectname
+        [string]$Projectname,
+
+        [Parameter(Mandatory = $false)]
+        [string]$Regex
+    )    
+    # Determine the value for conditiondata based on the regex parameter
+    $conditiondata = if ($Regex) { $Regex } else { $IPAddress }
         
-    )
+    
 
     # Get the current Policy Number
     $IASConfig = [XML](Get-Content -Path C:\Windows\System32\ias\ias.xml)
@@ -151,7 +167,7 @@ function Add-NpsNetworkPolicy {
     $arguments = @(
         "name = `"$Projectname`_$ClientName`"",
         "conditionid = '0x100c'",
-        "conditiondata = `"$IPAddress`"",
+        "conditiondata = `"$conditiondata`"",
         "policysource = '0'",
         "processingorder = `"$NextProcessOrder`"",
         "profileid = '0x1009'",
@@ -228,6 +244,7 @@ if ($CsvFilePath) {
         $ClientName = $Entry.ClientName
         $SharedSecret = $Entry.SharedSecret
         $Projectname = $Entry.Projectname
+        $Regex = $Entry.Regex
         
         # Create NPS client
         try {
@@ -236,8 +253,8 @@ if ($CsvFilePath) {
             if ($null -ne $NpsClient) {
                 Write-Log -Message "NPS client '$ClientName' with IP address '$IPAddress' has been created successfully." -Level "SUCCESS"
                 Write-Host "NPS client '$ClientName' with IP address '$IPAddress' has been created successfully . `n"
-                Add-ConnectionRequestPolicy -IPAddress $IPAddress -ClientName $ClientName -Projectname $Projectname
-                Add-NpsNetworkPolicy -IPAddress $IPAddress -ClientName $ClientName -Projectname $Projectname
+                Add-ConnectionRequestPolicy -IPAddress $IPAddress -ClientName $ClientName -Projectname $Projectname -Regex $Regex
+                Add-NpsNetworkPolicy -IPAddress $IPAddress -ClientName $ClientName -Projectname $Projectname -Regex $Regex
                 Get-NpsRadiusClient  | Where-Object { $_.name -eq "$ClientName" }
                 & netsh nps show cp | select-string "$ClientName" -Context 2, 13 | Out-Host
                 & netsh nps show np | select-string "$ClientName" -Context 2, 22 | Out-Host
@@ -272,8 +289,8 @@ elseif ($IPAddress -and $ClientName -and $SharedSecret) {
         if ($null -ne $NpsClient) {
             Write-Log -Message "NPS client '$ClientName' with IP address '$IPAddress' has been created successfully." -Level "SUCCESS"
             Write-Host "NPS client '$ClientName' with IP address '$IPAddress' has been created successfully.`n"
-            Add-ConnectionRequestPolicy -IPAddress $IPAddress -ClientName $ClientName -Projectname $Projectname
-            Add-NpsNetworkPolicy -IPAddress $IPAddress -ClientName $ClientName -Projectname $Projectname
+            Add-ConnectionRequestPolicy -IPAddress $IPAddress -ClientName $ClientName -Projectname $Projectname -Regex $Regex
+            Add-NpsNetworkPolicy -IPAddress $IPAddress -ClientName $ClientName -Projectname $Projectname -Regex $Regex
             Get-NpsRadiusClient  | Where-Object { $_.name -eq "$ClientName" }
             & netsh nps show cp | select-string "$ClientName" -Context 2, 13 | Out-Host
             & netsh nps show np | select-string "$ClientName" -Context 2, 22 | Out-Host
